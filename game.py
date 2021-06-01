@@ -1,97 +1,135 @@
 import math
-import random
+import time
+from player import HumanPlayer,RandomComputerPlayer,GeniusComputerPlayer
 
-class Player():
-    def __init__(self,letter):
-        # letter is X or O
-        self.letter = letter
+class TicTacToe:
+    def __init__(self):
+        self.board = self.make_board() #our board is single list
+        self.current_winner = None #keep track of cur winner
     
-    def get_move(self,game):
-        pass
+    @staticmethod
+    def make_board():
+        return [' ' for _ in range(9)]
 
+    def print_board(self):
+        for row in [self.board[i*3:(i+1)*3] for i in range(0,3)]:
+            print('| '+' | '.join(row)+' |')
 
+    @staticmethod
+    def print_board_nums():
+        # 0 | 1 | 2 (tells us what number corresponds to which spot)
+        number_board = [[str(i) for i in range(j*3,(j+1)*3)] for j in range(0,3)]
+        for row in number_board:
+            print("| "+" | ".join(row)+" |")
 
+    def make_move(self, square, letter):
+        # if valid move, then make the move [assign square to letter]
+        if self.board[square] == ' ':
+            self.board[square] = letter
+            if self.winner(square, letter):
+                self.current_winner = letter
+            return True
+        return False
 
-class HumanPlayer(Player):
-    def __init__(self,letter):
-        super().__init__(letter)
+    def winner(self, square, letter):
+        # total 3 checks
+        # across rows
+        row_ind = math.floor(square / 3)
+        row = self.board[row_ind*3:(row_ind+1)*3]
 
-    def get_move(self,game):
-        valid_square = False
-        val = None
-        while not valid_square:
-            square = input(self.letter+' \' s turn. Input move [0-8] : ')
-            # we will try to typecast into int, if not valid string,gives valueError
-            # if not valid in available moves, raise same valueerror
-            try:
-                val = int(square)
-                if val not in game.available_moves():
-                    raise ValueError
-                valid_square = True
-            except ValueError:
-                print("Not a valid cell.Try again.")
-        
-        return val
+        if (all(spot == letter for spot in row)):
+            return True
+        #across coloumns
+        col_ind = square % 3
+        column = [self.board[col_ind+i*3] for i in range(0, 3)]
+        if (all([spot == letter for spot in column])):
+            return True
+        #across diagonals
+        if (square % 2 == 0):
+            diagonal1 = [self.board[i] for i in [0, 4, 8]]
+            if all([spot == letter for spot in diagonal1]):
+                return True
+            diagonal2 = [self.board[i] for i in [2, 4, 6]]
+            if all([spot == letter for spot in diagonal2]):
+                return True
 
+        return False
 
-class RandomComputerPlayer(Player):
-    def __init__(self, letter):
-        super().__init__(letter)
+    def empty_squares(self):
+        # return any([spot==' ' for spot in self.board])
+        return ' ' in self.board
+    
+    def num_empty_squares(self):
+        return self.board.count(' ') # count of spaces
 
-    def get_move(self, game):
-        square = random.choice(game.available_moves())
-        return square
+    def available_moves(self):
+        return [i for (i, spot) in enumerate(self.board) if spot == " "]
+        # moves = []
+        # for (i,spot) in enumerate(self.board):
+        #     # ['X','O','X'] --> [(0,'X'),(1.'O'),(2,'X')]
+        #     if spot == ' ':
+        #         moves.append(i)
 
-class GeniusComputerPlayer(Player):
-    def __init__(self,letter):
-        super().__init__(letter)
+        # return moves
 
-    def get_move(self,game):
-        if len(game.available_moves()) == 9:
-            square = random.choice(game.available_moves())
+    
+
+def play(game,x_player,o_player,print_game = True):
+    
+    if print_game:
+        game.print_board_nums()
+
+    letter = 'X' # starting letter
+    # iterate till the board has empty squares
+
+    while game.empty_squares():
+        #get move from appropriate player
+        if letter == 'O':
+            square = o_player.get_move(game)
         else:
-            # get sqaure cleverly
-            square = self.minimax(game,self.letter)['position']
-
-        return square
-    #always use correct keys while using dictinaries,as they won't raise errors
-    def minimax(self,state,player):
-        max_player = self.letter #yourself!!
-        other_player = 'O' if player == 'X' else 'X' #the other player
-
-        #base case
-        # we stop if there is a winner in previous state
-        if state.current_winner == other_player:
-            # we should return position and score, we maximize/minimize score accordingly
-            return {'position':None,'score': 1*(state.num_empty_squares()+1) if other_player == max_player else -1*(state.num_empty_squares()+1)}
+            square = x_player.get_move(game)
         
-        elif not state.empty_squares():
-            #no empty() sqaures
-            #winner not decided yet
-            # tie
-            return {'position' : None,'score': 0}
+        # lets define a function to make a move:
+        if game.make_move(square,letter):
+            
+            if print_game:
+                print(letter + ' makes a move to square {}'.format(square))
+                game.print_board()
+                print("")
 
-        if player == max_player:
-            best = {'position':None,'score':-math.inf} # each score should maximize 
+            if game.current_winner:
+                if print_game:
+                    print(letter +' wins!')
+                return letter
+            # we change turn of player
+            # letter = (letter^('O'^'X')) # works for char in c++
+            letter = 'O' if letter == 'X' else 'X'
+
+        if print_game:
+            time.sleep(0.8)
+
+    if print_game:
+        print('It\'s a tie!!')
+
+
+if __name__ == '__main__':
+
+    x_player = HumanPlayer('X')
+    o_player = GeniusComputerPlayer('O')
+    t = TicTacToe()
+    play(t, x_player, o_player, print_game=True)
+    """
+    # check for our correctness,AI never loses
+    x_wins,o_wins,ties = 0,0,0
+    for _ in range(100):
+        t = TicTacToe()
+        result = play(t,x_player,o_player,print_game = False)
+        if result == 'X':
+            x_wins += 1
+        elif result == 'O':
+            o_wins += 1
         else:
-            best = {'position':None,'score': math.inf} # we need to minimise at each step
+            ties += 1
 
-        for possible_move in state.available_moves():
-            #step 1: make_move ,try that spot
-            state.make_move(possible_move,player)
-            #step 2: recursively use minimax to simualte gaem after making that move
-            sim_score = self.minimax(state,other_player) #now,we alter player
-            #step 3: undo that move
-            state.board[possible_move] = ' '
-            state.current_winner = None
-            sim_score['position'] = possible_move #messed up if not updated
-            #step 4: update the dictionaries if necessary
-            if player == max_player:
-                if sim_score['score'] > best['score']:
-                    best = sim_score
-            else:
-                if sim_score['score'] < best['score']:
-                    best = sim_score
-
-
-        return best
+    print('x_wins are {} , o_wins are {} and ties are {}'.format(x_wins,o_wins,ties))
+    """
