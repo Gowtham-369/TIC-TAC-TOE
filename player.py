@@ -79,7 +79,7 @@ class GeniusComputerPlayer(Player):
         for possible_move in state.available_moves():
             #step 1: make_move ,try that spot
             state.make_move(possible_move,player)
-            #step 2: recursively use minimax to simualte gaem after making that move
+            #step 2: recursively use minimax to simualte game after making that move
             sim_score = self.minimax(state,other_player) #now,we alter player
             #step 3: undo that move
             state.board[possible_move] = ' '
